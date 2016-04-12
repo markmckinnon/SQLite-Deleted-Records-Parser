@@ -37,10 +37,11 @@
 import struct
 from optparse import OptionParser
 import sys
+import re
 
 #function to remove the non-printable characters, tabs and white spaces
 def remove_ascii_non_printable(chunk):
-    chunk = ' '.join(chunk .split())
+    chunk = ''.join(map(chr, chunk))
     return ''.join([ch for ch in chunk if ord(ch) > 31 and ord(ch) < 126 or ord(ch) ==9])
 
 
@@ -66,7 +67,7 @@ if len(sys.argv) == 1:
 #if input of output file missing, exit
 if (options.infile == None) or (options.outfile == None):
     parser.print_help()
-    print "Filename or Output file not given"
+    print ("Filename or Output file not given")
     sys.exit(0)
 
 #open file, confirm it is an SQLite DB
@@ -79,7 +80,7 @@ except:
 try:
     output = open(options.outfile, 'w')
 except:
-    print "Error opening output file"
+    print ("Error opening output file")
     sys.exit(0)
 
 
@@ -100,7 +101,7 @@ f.seek(0)
 #verify the file is an sqlite db; read the first 16 bytes for the header
 header = f.read(16)
 
-if "SQLite" not in header:
+if b"SQLite" not in header:
     print ("File does not appear to be an SQLite File")
     sys.exit(0)
 
@@ -157,7 +158,7 @@ while offset < filesize:
             
             unallocated  = remove_ascii_non_printable(unallocated )
             if unallocated != "":
-                output.write("Unallocated" + "\t" +  str(offset+start) + "\t" + str(length) + "\t" + str(unallocated) + "\n" )   
+                output.write("Unallocated" + "\t" +  str(offset+start) + "\t" + str(length) + "\t" + re.sub('\s+',' ', str(unallocated)) + "\n" )   
                 
         #if there are freeblocks, lets pull the data
         
@@ -188,7 +189,7 @@ while offset < filesize:
                 #lets clean this up so its mainly the strings - remove white spaces and tabs too
                 free_block  = remove_ascii_non_printable(free_block)
                 if unallocated != "":
-                    output.write("Free Block" + "\t" +  str(offset+freeblock_offset) + "\t" + str(free_block_size) + "\t" + str(free_block) + "\n" )
+                    output.write("Free Block" + "\t" +  str(offset+freeblock_offset) + "\t" + str(free_block_size) + "\t" + re.sub('\s+',' ', str(free_block)) + "\n" )
             
             freeblock_offset = next_fb_offset
         
@@ -206,7 +207,7 @@ while offset < filesize:
             output.write(printable_pagestring)
             output.write( "\n\n")
         else:
-            output.write("Non-Leaf-Table-Btree-Type_" + str(flag) + "\t" +  str(offset) + "\t" + str(pagesize) + "\t" + printable_pagestring + "\n" )
+            output.write("Non-Leaf-Table-Btree-Type_" + str(flag) + "\t" +  str(offset) + "\t" + str(pagesize) + "\t" + re.sub('\s+',' ', printable_pagestring) + "\n" )
         
     #increase the offset by one pagesize and loop
     offset = offset + pagesize
